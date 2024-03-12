@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}The Critical Rationalist Lexicon{% endblock %}
+{% block content %}
+
+<h1>Search All Quotes</h1>
+
+<form id="search-form" style="text-align:center">
+    <input type="text" id="query" name="query" placeholder="Enter list of keywords, e.g. 'universe, computer'" style="width: 300px;" />
+</form>
+
+<div id="results">
+  <table style="border-spacing:1em">
+    <thead id="header" style="display:none">
+      <tr>
+        <th>Sentence</th>
+        <th>Keywords</th>
+        <th>Author</th>
+      </tr>
+    </thead>
+    <tbody id="sentences-list">
+      {% for item in quotes%}
+      <tr style="display:none">
+        <td>
+        {{ quotes.get(item).get('quote')}}
+        </td>
+        <td>
+        {{ quotes.get(item).get('keywords')}}
+        </td>
+        <td>
+        {{ quotes.get(item).get('author')}}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+<script>
+    window.addEventListener('keydown',function(e) {
+        if (e.keyIdentifier=='U+000A' || e.keyIdentifier=='Enter' || e.keyCode==13) {
+            if (e.target.nodeName=='INPUT' && e.target.type=='text') {
+                e.preventDefault();
+                return false;
+            }
+        }
+    }, true);
+
+    $(document).ready(function(){
+        var sentences = $('#sentences-list tr'); // Select all sentences
+        $('#query').on('input', function(){
+            var query = $(this).val().toLowerCase().trim(); // Convert query to lowercase and remove extra spaces
+            var sentences = $('#sentences-list tr'); // Select all sentences
+            if (query === '') {
+                sentences.hide();
+                var header = document.getElementById('header');
+                header.style.display = "none";
+            } else {
+              sentences.each(function() {
+                  var sentence = $(this).text().toLowerCase(); // Get the text of the current sentence
+                  // if query contains comma
+                  if (query.includes(',')) {
+                    var queryList = query.split(',');
+                    // check if sentence includes any of the words in the query list
+                    var match = queryList.every(function(word) {
+                      return sentence.includes(word.trim());
+                    });
+                  } else {
+                    // split query into list of words separated by comma
+                    var match = sentence.includes(query); // Check if the sentence contains the query
+                    console.log("Is there a match?", sentence.includes(query));
+                  }
+                  $(this).toggle(match); // Show/hide the sentence based on the match
+              });
+              // grab elemenet iwth id header 
+              function isVisible(elem) {
+                return elem.style.cssText != "display: none;";
+              }
+              // iterate over all items insetnence
+              somethingIsVisible = false;
+              for (var i = 0; i < sentences.length; i++) {
+                if (sentences[i].style.cssText != "display: none;") {
+                  somethingIsVisible = true;
+                  break;
+                }
+              }
+              var header = document.getElementById('header');
+              if (somethingIsVisible) {
+                  console.log("Table header will be shown");
+                  header.style.display = "table-header-group";
+              } else {
+                  header.style.display = "none";
+              }
+            }
+        });
+    });
+</script>
+{% endblock %}

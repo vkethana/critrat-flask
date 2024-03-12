@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <title>{% block title %}Critical Rationalist Dictionary{% endblock %}</title>
+    {% if self._TemplateReference__context.name == 'search.html' %}
+      <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    {% endif %}
+    {% if self._TemplateReference__context.name == 'suggest.html' %}
+      <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
+</head>
+<body>
+    
+    <main>
+
+        {% block content %}
+        {% endblock %}
+    </main>
+    
+    <footer class="navbar">
+    <!-- Add common header content here -->
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/about">About</a></li>
+                <li><a href="/search">Search All Quotes</a></li>
+                <li><a href="/random">Random Quote</a></li>
+                <li><a href="/suggest">Suggest New Entry</a></li>
+            </ul>
+        </nav>
+    </footer>
+</body>
+</html>

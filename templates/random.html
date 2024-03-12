@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Random Quote{% endblock %}
+{% block content %}
+  <h1>Random Quote</h1>
+    <div class="quote">
+      <p>{{ quote.quote }} —{{ quote.author }}, {{quote.title}} </p>
+    </div>
+{% endblock %}

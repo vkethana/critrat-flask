@@ -4,15 +4,17 @@ import random
 import gspread
 import json
 import pandas as pd
-from decouple import config
+from decouple import AutoConfig
 
 with open('abbreviation_list.json', 'r') as file:
     abbrevations_to_real = json.load(file)
 
+config = AutoConfig(search_path='.env')
+pkey = config("GS_private_key_id")
 credentials = {
   "type": "service_account",
   "project_id": "critrat",
-  "private_key_id": config("GS_private_key_id"),
+  "private_key_id": (config("GS_private_key_id")),
   "private_key": config("GS_private_key"),
   "client_email": config("GS_client_email"),
   "client_id": config("GS_client_id"),

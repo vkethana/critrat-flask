@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{category}}{% endblock %}
 {% block content %}
-    <h1>{{ category }}</h1>
+  <h1>{{ category|capitalize|replace('_', ' ')}}</h1>
     {% for quote in quotes %}
     <div class="quote">
         <p>{{ quote.Quote }} —{{ quote.Source }}</p>

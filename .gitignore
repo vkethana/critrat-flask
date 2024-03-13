@@ -163,3 +163,4 @@ test/*
 
 TEMP_DATA.csv
 .env
+secret/*

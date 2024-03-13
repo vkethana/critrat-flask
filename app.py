@@ -1,70 +1,60 @@
 from flask import Flask, render_template, jsonify, request
 import requests
 import random
+import gspread
 import json
+import pandas as pd
 
-app = Flask(__name__)
-
-# Read JSON file
 with open('abbreviation_list.json', 'r') as file:
     abbrevations_to_real = json.load(file)
 
-def open_data(file_paths):
-  # Read JSON file
-  data = {}
-  for file_path in file_paths:
-    print("Reading file path", file_path)
-    with open(file_path, 'r') as file:
-        data = data | json.load(file)
-  print("File read successfully.")
-  return data
+def get_data():
+  gc = gspread.service_account()
+  wks = gc.open("CritRat Quote Database").sheet1
+  df = pd.DataFrame(wks.get_all_records())
+  df['keywords'] = ''
 
-def get_data(data):
+  rows_to_check = ["KEYWORD_" + str(i) for i in range(1,13)]
+  all_keywords = set()
+  quotes_by_category = {}
 
-  categories = {}
-  for i in data.keys():
-      quote = data[i]
-      quote_category_list = quote['keywords']
+  for index, row in df.iterrows():
+      found_keywords = set()
+      for r in rows_to_check:
+          if (row[r] != ''):
+              found_keywords.add(row[r])
+              all_keywords.add(row[r])
+      df.at[index, 'keywords'] = found_keywords
+      if found_keywords:
+        for keyword in found_keywords:
+          entry = {"Quote": row['quote'], "Source": row['author'] + ", " + row['title']}
+          if keyword in abbrevations_to_real:
+            keyword = abbrevations_to_real[keyword]
+          if keyword in quotes_by_category:
+              quotes_by_category[keyword].append(entry)
+              pass
+          else:
+            quotes_by_category[keyword] = [entry]
 
-      ***REMOVED***
-      text_to_check = quote['quote'].lower()
-      is_controversial = any(elem in text_to_check for elem in hidden_keywords) or any(elem in text_to_check.split() for elem in hidden_keywords)
+  df.drop(columns=["KEYWORD_" + str(i) for i in range(1, 13)], inplace=True)
 
-      good_length = len(quote['quote']) < 900
+  quote_counter = {}
+  for i in quotes_by_category.keys():
+    #print("KEY: ", i)
+    #print("ITEM: ", quotes_by_category[i])
 
-      if ((quote_category_list != []) and (is_controversial == False) and good_length):
-        c = quote_category_list[0]
-        if (c != 'pattern') and (c != 'the pattern'):
-          if c not in categories:
-              categories[c] = []
-          categories[c].append({'Quote': quote['quote'], 'Source': quote['author']+ ", " + quote['title']})
+    quote_counter[i] = len(quotes_by_category[i])
 
-      else:
-        #print("Will NOT show this quote in the site: ", quote['text'], "because it has no keywords / contains controversial material.")
-        pass
-
-  new_dict = {}
-  for c in categories:
-      if c in abbrevations_to_real:
-          new_dict[abbrevations_to_real[c]] = categories[c]
-      else:
-          new_dict[c] = categories[c]
-  return new_dict
-
-data = open_data(['naval_brett.json', 'dd.json'])
-quotes_by_category = get_data(data)
-#print(quotes_by_category)
-
-quote_counter = {}
-for i in quotes_by_category.keys():
-  #print("KEY: ", i)
-  #print("ITEM: ", quotes_by_category[i])
-
-  quote_counter[i] = len(quotes_by_category[i])
-
-sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
+  sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
 # remove the categories that don't have at least 2 quotes
-sorted_categories = [i for i in sorted_categories if quote_counter[i] > 1]
+  sorted_categories = [i for i in sorted_categories if quote_counter[i] > 1]
+
+  return quotes_by_category, quote_counter, sorted_categories, df
+
+quotes_by_category, quote_counter, sorted_categories, df = get_data()
+data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+
+app = Flask(__name__)
 
 @app.route('/')
 def index():
@@ -85,10 +75,14 @@ def word_page(keyword):
 @app.route('/random')
 def random_item():
     # Randomly select an item from the JSON data
-    random_key = random.choice(list(data.keys()))
-    random_item = data[random_key]
-    #print(random_item)
-    return render_template('random.html', quote=random_item)
+    random_items = quotes_by_category[random.choice(list(quotes_by_category.keys()))]
+    random_quote = random.choice(random_items)
+    #print(random_quote)
+    '''
+    random_key_2 = random.choice(list(random_items.keys()))
+    random_item = random_items[random_key_2]
+    '''
+    return render_template('random.html', quote=random_quote)
 
 @app.route('/about')
 def about():
@@ -104,10 +98,10 @@ def suggest():
         # Get the form data from the request
         form_data = request.form
         captcha_response = request.form['g-recaptcha-response']
-        print(form_data)
+        #print(form_data)
         form_data = dict(form_data)
         form_data['gCaptchaResponse'] = captcha_response
-        print(form_data)
+        #print(form_data)
 
         url = 'https://script.google.com/macros/s/AKfycbzat_gUO8Vw1jvfgHFsAh_GNVYi4AzDH3061DnsRa68jLqpX20-uVxJOBL16AG0bPw/exec'
         headers = {'Content-Type': 'text/plain;charset=utf-8'}
@@ -122,6 +116,23 @@ def suggest():
 
 
     return render_template('suggest.html')
+
+@app.route('/refresh', methods=['GET', 'POST'])
+def refresh():
+    if request.method == 'POST':
+        global quotes_by_category, quote_counter, sorted_categories, data
+        # Your Python function to run when the button is clicked
+        # You can perform any action you want here
+        try:
+          quotes_by_category, quote_counter, sorted_categories, df = get_data()
+          data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+        except:
+          print("Error getting data")
+          return jsonify({'status': 'error'})
+        else:
+          print("Data refreshed")
+          return jsonify({'status': 'success'})
+    return render_template('refresh.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

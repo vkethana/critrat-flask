@@ -4,12 +4,27 @@ import random
 import gspread
 import json
 import pandas as pd
+from decouple import config
 
 with open('abbreviation_list.json', 'r') as file:
     abbrevations_to_real = json.load(file)
 
+credentials = {
+  "type": "service_account",
+  "project_id": "critrat",
+  "private_key_id": config("GS_private_key_id"),
+  "private_key": config("GS_private_key"),
+  "client_email": config("GS_client_email"),
+  "client_id": config("GS_client_id"),
+  "auth_uri": config("GS_auth_uri"),
+  "token_uri": config("GS_token_uri"),
+  "auth_provider_x509_cert_url": config("GS_auth_provider_x509_cert_url"),
+  "client_x509_cert_url": config('GS_CLIENT_X509_CERT_URL'),
+  "universe_domain": config('GS_UNIVERSE_DOMAIN'),
+}
+
 def get_data():
-  gc = gspread.service_account()
+  gc = gspread.service_account_from_dict(credentials)
   wks = gc.open("CritRat Quote Database").sheet1
   df = pd.DataFrame(wks.get_all_records())
   df['keywords'] = ''

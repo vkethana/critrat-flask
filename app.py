@@ -164,7 +164,9 @@ def handleDatabaseRefresh():
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
   if request.method == 'POST':
-    print("POST request received: ", request.form)
+    print("POST request received: ", request)
+    print("POST request received with form ID: ", request.form)
+    print("POST request received with form body: ", request.get_data())
     if 'submit' in request.form:
       handleDatabaseRefresh()
     elif "dropdown" in request.form:

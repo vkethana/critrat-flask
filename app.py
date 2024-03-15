@@ -134,36 +134,44 @@ def refreshDatabase():
   quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
   data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
 
+def handleDropdownPost(request):
+  assert request.method == 'POST'
+  print("Dropdown was selected")
+  selected_option = request.form.get('dropdown')
+  # prevent possible unwanted behavior:
+  if (selected_option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
+    selected_database = selected_option
+    print("Attempting to refresh database")
+    refreshDatabase()
+    response = make_response("Option saved as cookie!")
+    response.set_cookie('selected_database', selected_database)
+    return response
+
+def handleDatabaseRefresh():
+  print("Data refresh button was pressed")
+  try:
+    print("refreshing database..")
+    refreshDatabase()
+    print("success")
+    return jsonify({'status': 'success'})
+  except:
+    print("Error getting data")
+    return jsonify({'status': 'error'})
+  else:
+    print("Data refreshed")
+    return jsonify({'status': 'success'})
+
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
-    if request.method == 'POST':
-        print("POST request received: ", request.form)
-        if 'submit' in request.form:
-          print("Data refresh button was pressed")
-          try:
-            refreshDatabase()
-          except:
-            print("Error getting data")
-            return jsonify({'status': 'error'})
-          else:
-            print("Data refreshed")
-            return jsonify({'status': 'success'})
+  if request.method == 'POST':
+    print("POST request received: ", request.form)
+    if 'submit' in request.form:
+      handleDatabaseRefresh()
     elif "dropdown" in request.form:
-        print("Dropdown was selected")
-        selected_option = request.form.get('dropdown')
-        # prevent possible unwanted behavior:
-        if (selected_option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
-          selected_database = selected_option
-          print("Attempting to refresh database")
-          refreshDatabase()
-        else:
-          print("Unknown database selected")
-        response = make_response("Option saved as cookie!")
-        response.set_cookie('selected_database', selected_database)
-        return response
+      handleDropdownPost(request)
     else:
-        print("Unknown button was pressed")
-    return render_template('refresh.html')
+      print("Unknown button was pressed")
+  return render_template('refresh.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -5,13 +5,26 @@
   <form id="refreshForm" method="post" class="center">
       <button type="submit" id="refreshButton" class="submitButton">Refresh Database</button>
   </form>
+
+  <form method="POST">
+    <label for="dropdown">Select an option:</label>
+    <select id="dropdown" name="dropdown">
+        <option value="DD" selected>DD</option>
+        <option value="David">David</option>
+        <option value="Vijay">Vijay</option>
+    </select>
+    <button type="submit" id="saveDropdown">Save Option</button>
+  </form>
+
   <div id="messageContainer"></div> <!-- Container for displaying messages -->
   <script>
     document.getElementById("refreshForm").addEventListener("submit", function(event) {
+        console.log("Successfully grabbed element with id refreshForm");
         event.preventDefault();
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/refresh", true);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        console.log("Successfully opened xhr");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 var response = JSON.parse(xhr.responseText);

@@ -16,10 +16,13 @@ load_dotenv(find_dotenv())
 encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
 # decode
 credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
+selected_database = "DD"
 
-def get_data():
+def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
-  wks = gc.open("CritRat Quote Database").sheet1
+  wks = gc.open("CritRat Quote Database")
+  print("List of all available worksheets: ", wks.worksheets())
+  wks = wks.worksheet(worksheet_name)
   df = pd.DataFrame(wks.get_all_records())
   df['keywords'] = ''
 
@@ -60,7 +63,7 @@ def get_data():
 
   return quotes_by_category, quote_counter, sorted_categories, df
 
-quotes_by_category, quote_counter, sorted_categories, df = get_data()
+quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
 data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
 
 app = Flask(__name__)
@@ -126,21 +129,40 @@ def suggest():
 
     return render_template('suggest.html')
 
+def refreshDatabase():
+  global quotes_by_category, quote_counter, sorted_categories, data, selected_database
+  quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
+  data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
     if request.method == 'POST':
-        global quotes_by_category, quote_counter, sorted_categories, data
-        # Your Python function to run when the button is clicked
-        # You can perform any action you want here
-        try:
-          quotes_by_category, quote_counter, sorted_categories, df = get_data()
-          data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
-        except:
-          print("Error getting data")
-          return jsonify({'status': 'error'})
+        print("POST request received: ", request.form)
+        if 'submit' in request.form:
+          print("Data refresh button was pressed")
+          try:
+            refreshDatabase()
+          except:
+            print("Error getting data")
+            return jsonify({'status': 'error'})
+          else:
+            print("Data refreshed")
+            return jsonify({'status': 'success'})
+    elif "dropdown" in request.form:
+        print("Dropdown was selected")
+        selected_option = request.form.get('dropdown')
+        # prevent possible unwanted behavior:
+        if (selected_option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
+          selected_database = selected_option
+          print("Attempting to refresh database")
+          refreshDatabase()
         else:
-          print("Data refreshed")
-          return jsonify({'status': 'success'})
+          print("Unknown database selected")
+        response = make_response("Option saved as cookie!")
+        response.set_cookie('selected_database', selected_database)
+        return response
+    else:
+        print("Unknown button was pressed")
     return render_template('refresh.html')
 
 if __name__ == '__main__':

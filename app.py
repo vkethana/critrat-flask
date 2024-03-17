@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 import requests
 import random
 import gspread
@@ -9,7 +9,7 @@ import base64
 import os
 
 with open('abbreviation_list.json', 'r') as file:
-    abbrevations_to_real = json.load(file)
+    abbreviations_to_real = json.load(file)
 
 # get the value of `SERVICE_ACCOUNT_KEY`environment variable
 load_dotenv(find_dotenv())
@@ -40,8 +40,8 @@ def get_data(worksheet_name):
       if found_keywords:
         for keyword in found_keywords:
           entry = {"Quote": row['quote'], "Source": row['author'] + ", " + row['title']}
-          if keyword in abbrevations_to_real:
-            keyword = abbrevations_to_real[keyword]
+          if keyword in abbreviations_to_real:
+            keyword = abbreviations_to_real[keyword]
           if keyword in quotes_by_category:
               quotes_by_category[keyword].append(entry)
               pass
@@ -126,7 +126,6 @@ def suggest():
         else:
             print('err', response.text)
 
-
     return render_template('suggest.html')
 
 def refreshDatabase():
@@ -134,46 +133,36 @@ def refreshDatabase():
   quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
   data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
 
-def handleDropdownPost(request):
-  assert request.method == 'POST'
-  print("Dropdown was selected")
-  selected_option = request.form.get('dropdown')
-  # prevent possible unwanted behavior:
-  if (selected_option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
-    selected_database = selected_option
+def handleDropdown(option):
+  if (option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
+    global selected_database
+    selected_database = option
     print("Attempting to refresh database")
-    refreshDatabase()
-    response = make_response("Option saved as cookie!")
-    response.set_cookie('selected_database', selected_database)
-    return response
-
-def handleDatabaseRefresh():
-  print("Data refresh button was pressed")
-  try:
-    print("refreshing database..")
-    refreshDatabase()
-    print("success")
-    return jsonify({'status': 'success'})
-  except:
-    print("Error getting data")
-    return jsonify({'status': 'error'})
+    try:
+      refreshDatabase()
+      return "Database was refreshed successfully."
+    except:
+      return "Error refreshing database."
   else:
-    print("Data refreshed")
-    return jsonify({'status': 'success'})
+    return "Invalid option was selected."
 
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
   if request.method == 'POST':
-    print("POST request received: ", request)
-    print("POST request received with form ID: ", request.form)
-    print("POST request received with form body: ", request.get_data())
-    if 'submit' in request.form:
-      handleDatabaseRefresh()
-    elif "dropdown" in request.form:
-      handleDropdownPost(request)
-    else:
-      print("Unknown button was pressed")
-  return render_template('refresh.html')
+      print("POST request received: ", request)
+      option = request.form.get('option')  # Use request.form.get to handle missing keys
+
+      if option == None:
+        print("Invalid option was selected")
+
+      msg = handleDropdown(option)
+      response = make_response(render_template('refresh.html', selected_option=option, message=msg))
+      response.set_cookie('selected_option', option)
+      return response
+  else:
+      selected_option = request.cookies.get('selected_option')
+      print("selected option is ", selected_option)
+      return render_template('refresh.html', selected_option=selected_option)
 
 if __name__ == '__main__':
     app.run(debug=True)

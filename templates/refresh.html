@@ -2,52 +2,20 @@
 {% block title %}The Critical Rationalist Lexicon{% endblock %}
 {% block content %}
   <h1>Super Secret Webpage</h1>
-  <form id="refreshForm" method="post" class="center">
-      <button onclick="sendPOST('refreshButton')" id="refreshButton" class="submitButton">Refresh Database</button>
-  </form>
-
-  <form method="POST">
+    <form action="/refresh" method="post">
     <label for="dropdown">Select an option:</label>
-    <select id="dropdown" name="dropdown">
-        <option value="DD" selected>DD</option>
-        <option value="David">David</option>
-        <option value="Vijay">Vijay</option>
+    <select id="dropdown" name="option">
+        <option value="DD" {% if selected_option == 'DD' %}selected{% endif %}>DD</option>
+        <option value="David" {% if selected_option == 'David' %}selected{% endif %}>David</option>
+        <option value="Vijay" {% if selected_option == 'Vijay' %}selected{% endif %}>Vijay</option>
     </select>
-    <button onclick="sendPOST('saveDropdown')" id="saveDropdown">Save Option</button>
+    <button type="submit">Refresh Database</button>
   </form>
 
-  <div id="messageContainer"></div> <!-- Container for displaying messages -->
-  <script>
-    function sendPOST(formID) {
-          console.log("Sending POST request");
-          var formData = new FormData();
-          formData.append("name", document.getElementById("name").value);
-          formData.append("email", document.getElementById("email").value);
+  <div id="messageContainer">
+    {% if message %}
+    <p>{{ message }}</p>
+    {% endif %}
+  </div> <!-- Container for displaying messages -->
 
-          fetch("/submit", {
-              method: "POST",
-              body: formData
-          })
-
-        .then(response => response.json())
-        .then(data => {
-            console.log('RESponse:', data);j
-            // Handle response from server if needed
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-
-    function showMessage(message) {
-        var messageContainer = document.getElementById("messageContainer");
-        // Clear previous messages
-        messageContainer.innerHTML = "";
-        // Create a new message element
-        var messageElement = document.createElement("p");
-        messageElement.textContent = message;
-        // Append the message to the container
-        messageContainer.appendChild(messageElement);
-    }
-  </script>
 {% endblock %}

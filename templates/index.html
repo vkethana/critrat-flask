@@ -5,7 +5,7 @@
     What do critical rationalists think about...
     <ul>
         {% for category in sorted_categories %}
-        <li>... <a href="/keyword/{{ category|lower|replace(' ', '_') }}">{{ category }}</a>? ({{quote_counter[category]}} quotes)</li>
+        <li>... <a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a>? ({{quote_counter[category]}} quotes)</li>
         {% endfor %}
     </ul>
     Disclaimers: I cannot verify accuracy of every tweet listed. Views represented in the quotes are not necessarily my own. 

@@ -1,0 +1,4 @@
+- Fix spaghetti code
+- Figure out simpler way to send requests instead of putting information in body of request
+- IF char_quote) > 500, do not display in main area
+- Fix bug with Darwin keyword not showing up

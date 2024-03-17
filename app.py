@@ -4,7 +4,7 @@ import random
 import gspread
 import json
 import pandas as pd
-from dotenv import load_dotenv, find_dotenv
+#from dotenv import load_dotenv, find_dotenv
 import base64
 import os
 
@@ -12,7 +12,7 @@ with open('abbreviation_list.json', 'r') as file:
     abbreviations_to_real = json.load(file)
 
 # get the value of `SERVICE_ACCOUNT_KEY`environment variable
-load_dotenv(find_dotenv())
+#load_dotenv(find_dotenv())
 encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
 # decode
 credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
@@ -22,7 +22,8 @@ database_dict = {}
 def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
   wks = gc.open("CritRat Quote Database")
-  print("List of all available worksheets: ", wks.worksheets())
+  #print("List of all available worksheets: ", wks.worksheets())
+  print("Loading the database: ", worksheet_name)
   wks = wks.worksheet(worksheet_name)
   df = pd.DataFrame(wks.get_all_records())
   df['keywords'] = ''

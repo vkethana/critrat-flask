@@ -2,15 +2,19 @@
 {% block title %}The Critical Rationalist Lexicon{% endblock %}
 {% block content %}
   <h1>Super Secret Webpage</h1>
-    <form action="/refresh" method="post">
-    <label for="dropdown">Select an option:</label>
-    <select id="dropdown" name="option">
-        <option value="DD" {% if selected_option == 'DD' %}selected{% endif %}>DD</option>
-        <option value="David" {% if selected_option == 'David' %}selected{% endif %}>David</option>
-        <option value="Vijay" {% if selected_option == 'Vijay' %}selected{% endif %}>Vijay</option>
-    </select>
-    <button type="submit">Refresh Database</button>
-  </form>
+  <div class="center">
+      <form action="/refresh" method="post">
+      <label for="dropdown">Select an option:</label>
+      <select id="dropdown" name="option">
+          <option value="DD" {% if selected_option == 'DD' %}selected{% endif %}>DD</option>
+          <option value="David" {% if selected_option == 'David' %}selected{% endif %}>David</option>
+          <option value="Vijay" {% if selected_option == 'Vijay' %}selected{% endif %}>Vijay</option>
+      </select>
+      <br />
+      <br />
+      <button type="submit" class='submitButton'>Refresh Database</button>
+    </form>
+  </div>
 
   <div id="messageContainer">
     {% if message %}

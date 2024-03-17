@@ -17,6 +17,7 @@ encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
 # decode
 credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
 selected_database = "DD"
+database_dict = {}
 
 def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
@@ -61,23 +62,37 @@ def get_data(worksheet_name):
 # remove the categories that don't have at least 2 quotes
   sorted_categories = [i for i in sorted_categories if quote_counter[i] > 1]
 
-  return quotes_by_category, quote_counter, sorted_categories, df
+  return (quotes_by_category, quote_counter, sorted_categories, df, df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index'))
 
-quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
-data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+# TODO add a way to iterate through all the databases without manual entry
+for selected_database in ["DD",  "David", "Vijay", "Other"]:
+  database_dict[selected_database] = get_data(selected_database)
 
 app = Flask(__name__)
 
+def get_appropriate_database():
+  selected_option = request.cookies.get('selected_option')
+  print("Is selected option available? ", selected_option)
+  if selected_option == None:
+    return database_dict['DD']
+  else:
+    return database_dict[selected_option]
+
 @app.route('/')
 def index():
+    stuff = get_appropriate_database()
     # Pass the data to the template
-    return render_template('index.html', sorted_categories=sorted_categories, quote_counter=quote_counter)
+    return render_template('index.html', sorted_categories=stuff[2], quote_counter=stuff[1])
 
 @app.route('/keyword/<keyword>')
 def word_page(keyword):
+    if (keyword == 'inf'):
+      keyword = 'infinity'
+    stuff = get_appropriate_database()
     # Here you can do whatever you want with the keyword, 
     # like searching a database, processing it, etc.
     try:
+      quotes_by_category = stuff[0]
       quotes = quotes_by_category[keyword.replace("_", " ")]
       return render_template('category_template.html', category=keyword, quotes=quotes)
     except:
@@ -86,14 +101,13 @@ def word_page(keyword):
 
 @app.route('/random')
 def random_item():
+    stuff = get_appropriate_database()
+    quotes_by_category = stuff[0]
+
     # Randomly select an item from the JSON data
     random_items = quotes_by_category[random.choice(list(quotes_by_category.keys()))]
     random_quote = random.choice(random_items)
     #print(random_quote)
-    '''
-    random_key_2 = random.choice(list(random_items.keys()))
-    random_item = random_items[random_key_2]
-    '''
     return render_template('random.html', quote=random_quote)
 
 @app.route('/about')
@@ -102,7 +116,8 @@ def about():
 
 @app.route('/search')
 def search():
-    return render_template('search.html', quotes=data)
+    stuff = get_appropriate_database()
+    return render_template('search.html', quotes=stuff[-1])
 
 @app.route('/suggest', methods=['GET', 'POST'])
 def suggest():
@@ -128,21 +143,20 @@ def suggest():
 
     return render_template('suggest.html')
 
-def refreshDatabase():
-  global quotes_by_category, quote_counter, sorted_categories, data, selected_database
-  quotes_by_category, quote_counter, sorted_categories, df = get_data(selected_database)
-  data = df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+def refreshDatabase(targeted_refresh=None):
+  if targeted_refresh != None:
+    print("Only refreshing the targeted database: ", targeted_refresh)
+    database_dict[targeted_refresh] = get_data(targeted_refresh)
+  else:
+    for db in ["DD", "David", "Vijay", "Other"]:
+      database_dict[db] = get_data(db)
 
-def handleDropdown(option):
-  if (option in {'DD', 'SampleSheet', 'David', 'Vijay', 'Other'}):
-    global selected_database
-    selected_database = option
-    print("Attempting to refresh database")
-    try:
-      refreshDatabase()
-      return "Database was refreshed successfully."
-    except:
-      return "Error refreshing database."
+def handleDropdown(targeted_refresh=None):
+  try:
+    refreshDatabase(targeted_refresh)
+    return "Database was refreshed successfully."
+  except Exception as e:
+    return "Error refreshing database: " + str(e)
   else:
     return "Invalid option was selected."
 
@@ -155,7 +169,7 @@ def refresh():
       if option == None:
         print("Invalid option was selected")
 
-      msg = handleDropdown(option)
+      msg = handleDropdown(targeted_refresh=option)
       response = make_response(render_template('refresh.html', selected_option=option, message=msg))
       response.set_cookie('selected_option', option)
       return response

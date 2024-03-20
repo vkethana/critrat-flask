@@ -63,7 +63,14 @@ def get_data(worksheet_name):
 # remove the categories that don't have at least 2 quotes
   sorted_categories = [i for i in sorted_categories if quote_counter[i] > 1]
 
-  return (quotes_by_category, quote_counter, sorted_categories, df, df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index'))
+  retval = {
+    "quotes_by_category": quotes_by_category,
+    "quote_counter": quote_counter,
+    "sorted_categories": sorted_categories,
+    "df": df,
+    "data": df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+  }
+  return retval
 
 # TODO add a way to iterate through all the databases without manual entry
 for selected_database in ["DD",  "David", "Vijay", "Other"]:
@@ -72,18 +79,22 @@ for selected_database in ["DD",  "David", "Vijay", "Other"]:
 app = Flask(__name__)
 
 def get_appropriate_database():
-  selected_option = request.cookies.get('selected_option')
-  print("Is selected option available? ", selected_option)
-  if selected_option == None:
-    return database_dict['DD']
-  else:
+  try:
+    selected_option = request.cookies.get('selected_option')
     return database_dict[selected_option]
+  except:
+    print("Could not get the selected option from the cookie")
+    selected_option = None
+    print("Loading database for DD")
+    return database_dict['DD']
 
 @app.route('/')
 def index():
     stuff = get_appropriate_database()
+    sorted_categories = stuff['sorted_categories']
+    quote_counter = stuff['quote_counter']
     # Pass the data to the template
-    return render_template('index.html', sorted_categories=stuff[2], quote_counter=stuff[1])
+    return render_template('index.html', sorted_categories=sorted_categories, quote_counter=quote_counter)
 
 @app.route('/keyword/<keyword>')
 def word_page(keyword):
@@ -93,8 +104,9 @@ def word_page(keyword):
     # Here you can do whatever you want with the keyword, 
     # like searching a database, processing it, etc.
     try:
-      quotes_by_category = stuff[0]
+      quotes_by_category = stuff['quotes_by_category']
       quotes = quotes_by_category[keyword.replace("_", " ")]
+      print("RENDERING THE FOLLOWING DATA: ", quotes)
       return render_template('category_template.html', category=keyword, quotes=quotes)
     except:
       print("Category not found: ", keyword)
@@ -103,7 +115,7 @@ def word_page(keyword):
 @app.route('/random')
 def random_item():
     stuff = get_appropriate_database()
-    quotes_by_category = stuff[0]
+    quotes_by_category = stuff['quotes_by_category']
 
     # Randomly select an item from the JSON data
     random_items = quotes_by_category[random.choice(list(quotes_by_category.keys()))]
@@ -117,8 +129,8 @@ def about():
 
 @app.route('/search')
 def search():
-    stuff = get_appropriate_database()
-    return render_template('search.html', quotes=stuff[-1])
+    quotes = get_appropriate_database()['data']
+    return render_template('search.html', quotes=quotes)
 
 @app.route('/suggest', methods=['GET', 'POST'])
 def suggest():
@@ -181,3 +193,4 @@ def refresh():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    #pass

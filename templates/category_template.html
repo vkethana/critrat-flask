@@ -4,7 +4,7 @@
   <h1>{{ category|capitalize|replace('_', ' ')}}</h1>
     {% for quote in quotes %}
     <div class="quote">
-        <p>{{ quote.Quote }} —{{ quote.Source }}</p>
+        <p>{{ quote.Quote | replace("\n", "<br>") | safe }} —{{ quote.Source }}</p>
     </div>
     <div class="divider" style="margin-bottom: 20px; text-align:center;">
     —

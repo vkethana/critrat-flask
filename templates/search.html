@@ -21,7 +21,7 @@
       {% for item in quotes%}
       <tr style="display:none">
         <td>
-        {{ quotes.get(item).get('quote')}}
+        {{ quotes.get(item).get('quote') | replace("\n", "<br>") | safe }}
         </td>
         <td>
         {{ quotes.get(item).get('keywords')}}

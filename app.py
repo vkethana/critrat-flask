@@ -4,20 +4,18 @@ import random
 import gspread
 import json
 import pandas as pd
-#from dotenv import load_dotenv, find_dotenv
 import base64
 import os
 
-with open('data/abbreviation_list.json', 'r') as file:
-    abbreviations_to_real = json.load(file)
-
-# get the value of `SERVICE_ACCOUNT_KEY`environment variable
-#load_dotenv(find_dotenv())
 encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
-# decode
 credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
 selected_database = "DD"
 database_dict = {}
+max_character_count = 500
+amount_per_category = 3
+
+with open('data/abbreviation_list.json', 'r') as file:
+    abbreviations_to_real = json.load(file)
 
 def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
@@ -45,8 +43,8 @@ def get_data(worksheet_name):
           if keyword in abbreviations_to_real:
             keyword = abbreviations_to_real[keyword]
           if keyword in quotes_by_category:
-              quotes_by_category[keyword].append(entry)
-              pass
+              if len(row['quote']) < max_character_count:
+                quotes_by_category[keyword].append(entry)
           else:
             quotes_by_category[keyword] = [entry]
 
@@ -60,8 +58,9 @@ def get_data(worksheet_name):
     quote_counter[i] = len(quotes_by_category[i])
 
   sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
-# remove the categories that don't have at least 2 quotes
-  sorted_categories = [i for i in sorted_categories if quote_counter[i] > 1]
+
+  # remove the categories that don't have at least "N" quotes for arbitrary n
+  sorted_categories = [i for i in sorted_categories if (quote_counter[i] >= amount_per_category) and (i != '') and (i != float('inf'))]
 
   retval = {
     "quotes_by_category": quotes_by_category,
@@ -92,6 +91,7 @@ def get_appropriate_database():
 def index():
     stuff = get_appropriate_database()
     sorted_categories = stuff['sorted_categories']
+    #print("sorted_categories: ", sorted_categories)
     quote_counter = stuff['quote_counter']
     # Pass the data to the template
     return render_template('index.html', sorted_categories=sorted_categories, quote_counter=quote_counter)
@@ -100,17 +100,15 @@ def index():
 def word_page(keyword):
     if (keyword == 'inf'):
       keyword = 'infinity'
+
     stuff = get_appropriate_database()
-    # Here you can do whatever you want with the keyword, 
-    # like searching a database, processing it, etc.
     try:
       quotes_by_category = stuff['quotes_by_category']
       quotes = quotes_by_category[keyword.replace("_", " ")]
-      #print("RENDERING THE FOLLOWING DATA: ", quotes)
-      return render_template('category_template.html', category=keyword, quotes=quotes)
+
+      return render_template('category_template.html', category=keyword.replace('_', ' ').title(), quotes=quotes)
     except:
-      print("Category not found: ", keyword)
-      return None
+      return render_template('404.html')
 
 @app.route('/random')
 def random_item():

@@ -153,6 +153,7 @@ def suggest():
             #print('data', response_data)
         else:
             #print('err', response.text)
+            pass
 
     return render_template('suggest.html')
 

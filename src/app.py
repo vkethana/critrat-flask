@@ -8,7 +8,7 @@ import pandas as pd
 import base64
 import os
 
-with open('abbreviation_list.json', 'r') as file:
+with open('data/abbreviation_list.json', 'r') as file:
     abbreviations_to_real = json.load(file)
 
 # get the value of `SERVICE_ACCOUNT_KEY`environment variable
@@ -106,7 +106,7 @@ def word_page(keyword):
     try:
       quotes_by_category = stuff['quotes_by_category']
       quotes = quotes_by_category[keyword.replace("_", " ")]
-      print("RENDERING THE FOLLOWING DATA: ", quotes)
+      #print("RENDERING THE FOLLOWING DATA: ", quotes)
       return render_template('category_template.html', category=keyword, quotes=quotes)
     except:
       print("Category not found: ", keyword)
@@ -150,15 +150,15 @@ def suggest():
 
         if response.status_code == 200:
             response_data = response.json()
-            print('data', response_data)
+            #print('data', response_data)
         else:
-            print('err', response.text)
+            #print('err', response.text)
 
     return render_template('suggest.html')
 
 def refreshDatabase(targeted_refresh=None):
   if targeted_refresh != None:
-    print("Only refreshing the targeted database: ", targeted_refresh)
+    #print("Only refreshing the targeted database: ", targeted_refresh)
     database_dict[targeted_refresh] = get_data(targeted_refresh)
   else:
     for db in ["DD", "David", "Vijay", "Other"]:
@@ -176,7 +176,7 @@ def handleDropdown(targeted_refresh=None):
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
   if request.method == 'POST':
-      print("POST request received: ", request)
+      #print("POST request received: ", request)
       option = request.form.get('option')  # Use request.form.get to handle missing keys
 
       if option == None:
@@ -188,7 +188,7 @@ def refresh():
       return response
   else:
       selected_option = request.cookies.get('selected_option')
-      print("selected option is ", selected_option)
+      #print("selected option is ", selected_option)
       return render_template('refresh.html', selected_option=selected_option)
 
 if __name__ == '__main__':

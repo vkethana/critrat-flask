@@ -4,11 +4,15 @@
   <h1>{{ category }}</h1>
     {% for quote in quotes %}
       <div class="quote">
-          <p>{{ quote.Quote | replace("\n", "<br>") | safe }} —{{ quote.Source }}</p>
+        {% if "https" in quote.Title %}
+        <p>{{ quote.Quote | replace("\n", "<br>") | safe }} — {{quote.Author}} (<a href="{{ quote.Title }}" target="_blank">source</a>)</p>
+        {% else %}
+          <p>{{ quote.Quote | replace("\n", "<br>") | safe }} —{{ quote.Author }}, {{ quote.Title }}</p>
+        {% endif %}
       </div>
 
       {% if not loop.last %}
-        <div class="divider" style="margin-bottom: 20px; text-align:center;">
+        <div class="divider" style="padding: 0.5em; text-align:center;">
         —
         </div>
       {% endif %}

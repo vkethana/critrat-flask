@@ -41,7 +41,7 @@ def get_data(worksheet_name):
       df.at[index, 'keywords'] = found_keywords
       if found_keywords:
         for keyword in found_keywords:
-          entry = {"Quote": row['quote'], "Source": row['author'] + ", " + row['title']}
+          entry = {"Quote": row['quote'], "Author": row['author'], "Title": row['title']}
           if keyword in abbreviations_to_real:
             keyword = abbreviations_to_real[keyword]
           if keyword in quotes_by_category:

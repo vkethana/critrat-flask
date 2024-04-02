@@ -2,13 +2,18 @@
 {% block title %}The Critical Rationalist Lexicon{% endblock %}
 {% block content %}
   <h1>The Critical Rationalist Lexicon</h1>
-    What do critical rationalists think about...
-    <ul>
-        {% for category in sorted_categories %}
-            {% if category != "inf" %}
-              <li>... <a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a>? ({{quote_counter[category]}} quotes)</li>
-            {% endif %}
-        {% endfor %}
-    </ul>
-    Disclaimers: I cannot verify accuracy of every tweet listed. Views represented in the quotes are not necessarily my own. 
+  What do critical rationalists think about...
+
+  {% set sorted_categories = sorted(sorted_categories) %} {# Sorting categories alphabetically #}
+
+  {% for category in sorted_categories %}
+    {% if category != "inf" %}
+      <div>
+        <h2><a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a></h2>
+        <p>({{quote_counter[category]}} quotes)</p>
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  Disclaimers: I cannot verify the accuracy of every tweet listed. Views represented in the quotes are not necessarily my own. 
 {% endblock %}

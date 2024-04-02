@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify, request, make_response
+from datetime import datetime
 import requests
 import random
 import gspread
@@ -15,16 +16,49 @@ max_character_count = 500
 amount_per_category = 3
 
 with open('data/abbreviation_list.json', 'r') as file:
-    abbreviations_to_real = json.load(file)
+  abbreviations_to_real = json.load(file)
 
 def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
   wks = gc.open("CritRat Quote Database")
+  last_edit_time = wks.lastUpdateTime # datatype is string
+  last_edit_time = datetime.strptime(last_edit_time.replace('Z', ''), "%Y-%m-%dT%H:%M:%S.%f")
+  print("Spreadsheet was last edited at :", last_edit_time)
+
+  # Check if cache folder exists, if not, create it
+  if not os.path.exists('cache'):
+      os.makedirs('cache')
+
+  cache_file_path = f'cache/last_edit_time.txt'
+  if os.path.exists(cache_file_path):
+    with open(cache_file_path, 'r') as file:
+        stored_last_edit_time = datetime.fromisoformat(file.read())
+  else:
+      stored_last_edit_time = None
+
+  print("Stored last edit time is :", stored_last_edit_time)
+
+  # Compare stored last edit time with current last edit time
+  '''
+  path = 'cache/' + worksheet_name + '.csv'
+  if os.path.exists(path) and stored_last_edit_time and stored_last_edit_time == last_edit_time:
+    print("Using local version.")
+    df = pd.read_csv(path)
+  '''
+  '''
+  print("Writing edit time ", last_edit_time, " to file...")
+  file.write(last_edit_time.isoformat())
+
+  with open(cache_file_path, 'w') as file:
+    file.write(last_edit_time.isoformat())
+  '''
+
   #print("List of all available worksheets: ", wks.worksheets())
-  print("Loading the database: ", worksheet_name)
+  print("Downoading the database: ", worksheet_name)
   wks = wks.worksheet(worksheet_name)
   df = pd.DataFrame(wks.get_all_records())
   df['keywords'] = ''
+  #df.to_csv('cache/' + worksheet_name + '.csv', index=False)
 
   rows_to_check = ["KEYWORD_" + str(i) for i in range(1,13)]
   all_keywords = set()
@@ -90,7 +124,7 @@ def get_appropriate_database():
 @app.route('/')
 def index():
     stuff = get_appropriate_database()
-    sorted_categories = stuff['sorted_categories']
+    sorted_categories = sorted(stuff['sorted_categories'])
     #print("sorted_categories: ", sorted_categories)
     quote_counter = stuff['quote_counter']
     # Pass the data to the template

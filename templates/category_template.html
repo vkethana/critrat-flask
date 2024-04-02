@@ -1,17 +1,16 @@
 {% extends "base.html" %}
-{% block title %}The Critical Rationalist Lexicon{% endblock %}
+{% block title %}{{category}}{% endblock %}
 {% block content %}
-  <h1>The Critical Rationalist Lexicon</h1>
-  What do critical rationalists think about...
-
-  {% for category in sorted_categories %}
-    {% if category != "inf" %}
-      <div>
-        <h2><a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a></h2>
-        <p>({{quote_counter[category]}} quotes)</p>
+  <h1>{{ category }}</h1>
+    {% for quote in quotes %}
+      <div class="quote">
+          <p>{{ quote.Quote | replace("\n", "<br>") | safe }} —{{ quote.Source }}</p>
       </div>
-    {% endif %}
-  {% endfor %}
 
-  Disclaimers: I cannot verify the accuracy of every tweet listed. Views represented in the quotes are not necessarily my own. 
+      {% if not loop.last %}
+        <div class="divider" style="margin-bottom: 20px; text-align:center;">
+        —
+        </div>
+      {% endif %}
+    {% endfor %}
 {% endblock %}

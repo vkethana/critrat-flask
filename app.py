@@ -187,7 +187,7 @@ def limit_refresh_rate():
         if user_ip in user_request_times:
             request_times = user_request_times[user_ip]
             request_times = [t for t in request_times if current_time - t <= 60]
-            if len(request_times) >= 3:
+            if len(request_times) >= 10:
                 msg = "ERROR: You have made too many refresh requests. Please wait a bit and try again."
                 response = make_response(render_template('refresh.html', selected_option='DD', message=msg))
                 return response

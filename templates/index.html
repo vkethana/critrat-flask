@@ -1,14 +1,20 @@
 {% extends "base.html" %}
 {% block title %}The Critical Rationalist Lexicon{% endblock %}
 {% block content %}
-  <h1>The Critical Rationalist Lexicon</h1>
-    What do critical rationalists think about...
-    <ul>
-        {% for category in sorted_categories %}
-            {% if category != "inf" %}
-              <li>... <a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a>? ({{quote_counter[category]}} quotes)</li>
-            {% endif %}
-        {% endfor %}
-    </ul>
+  <h1>The David Deutsch Lexicon</h1>
+    <p>
+    {% for letter, categories in categorized_words.items() %}
+        <h2>{{ letter.upper() }}</h2>
+        <ul class="mainMenuList">
+            {% for category in categories %}
+              {% if category != "inf" %}
+                <li><a href="/keyword/{{ category|replace(' ', '_') }}">{{ category }}</a> ({{quote_counter[category]}} quotes)</li>
+              {% endif %}
+            {% endfor %}
+        </ul>
+    {% endfor %}
+    </p>
+    <p>
     If you'd like to suggest a new quote, fill out <a href="/suggest">this form</a>.
+    </p>
 {% endblock %}

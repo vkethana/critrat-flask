@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}The Critical Rationalist Lexicon{% endblock %}
 {% block content %}
-  <h1>Super Secret Webpage</h1>
-  <div class="center">
+  <h1>Settings</h1>
       <form action="/refresh" method="post">
       <label for="dropdown">Choose a custom database from the dropdown below:</label>
       <select id="dropdown" name="option">
@@ -12,9 +11,13 @@
       </select>
       <br />
       <br />
-      <button type="submit" class='submitButton'>Refresh Database</button>
+      <div class="center">
+          <button type="submit" class='submitButton'>Refresh Database</button>
+      </div>
     </form>
-  </div>
+  <p>
+    When the button is pressed, the app will check to see if any changes have been made on <a href="https://docs.google.com/spreadsheets/d/1xTxusR0Mfy5eE5vbe8wjIAVwvfojvHzCse_J_fUteZc/edit?pli=1#gid=0">this</a> Google Sheet. Changes are reflected immediately.
+  </p>
 
   <div id="messageContainer">
     {% if message %}

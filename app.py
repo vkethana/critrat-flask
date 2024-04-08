@@ -60,6 +60,7 @@ def get_data(worksheet_name):
     quote_counter[i] = len(quotes_by_category[i])
 
   sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
+  print("Categories: ", sorted_categories)
 
   # remove the categories that don't have at least "N" quotes for arbitrary n
   sorted_categories = [i for i in sorted_categories if (quote_counter[i] >= amount_per_category) and (i != '') and (i != float('inf'))]
@@ -79,6 +80,19 @@ for selected_database in ["DD",  "David", "Vijay", "Other"]:
 
 app = Flask(__name__)
 
+def categorize_words(words):
+    categorized_words = {chr(ord('a') + i): [] for i in range(26)}  # Generate empty categories for each letter
+
+    for word in words:
+        first_letter = word[0].lower()
+        if first_letter.isalpha():
+            categorized_words[first_letter].append(word)
+        else:
+            second_letter = word[1].lower()
+            categorized_words[second_letter].append(word)
+
+    return categorized_words
+
 def get_appropriate_database():
   try:
     selected_option = request.cookies.get('selected_option')
@@ -96,7 +110,7 @@ def index():
     #print("sorted_categories: ", sorted_categories)
     quote_counter = stuff['quote_counter']
     # Pass the data to the template
-    return render_template('index.html', sorted_categories=sorted_categories, quote_counter=quote_counter)
+    return render_template('index.html', categorized_words=categorize_words(sorted_categories), quote_counter=quote_counter)
 
 @app.route('/keyword/<keyword>')
 def word_page(keyword):
@@ -107,9 +121,9 @@ def word_page(keyword):
     try:
       quotes_by_category = stuff['quotes_by_category']
       quotes = quotes_by_category[keyword.replace("_", " ")]
-
       return render_template('category_template.html', category=keyword.replace('_', ' ').title(), quotes=quotes)
-    except:
+    except Exception as e:
+      print("Error loading quote: ", e)
       return render_template('404.html')
 
 @app.route('/random')

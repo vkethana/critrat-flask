@@ -60,7 +60,6 @@ def get_data(worksheet_name):
     quote_counter[i] = len(quotes_by_category[i])
 
   sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
-  print("Categories: ", sorted_categories)
 
   # remove the categories that don't have at least "N" quotes for arbitrary n
   sorted_categories = [i for i in sorted_categories if (quote_counter[i] >= amount_per_category) and (i != '') and (i != float('inf'))]

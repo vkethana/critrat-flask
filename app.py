@@ -41,7 +41,27 @@ def get_data(worksheet_name):
       df.at[index, 'keywords'] = found_keywords
       if found_keywords:
         for keyword in found_keywords:
-          entry = {"Quote": row['quote'], "Author": row['author'], "Title": row['title']}
+          # check if the quote has a line break and if so print it out
+          if "\n" in row['quote']:
+            print("Line break found in quote: ", row['quote'])
+            # split the quote into a list of lines
+            lines = [i for i in row['quote'].split("\n") if i != '']
+            #print("Lines: ", lines)
+            entry = {
+              "Quote": row['quote'],
+              "Author": row['author'],
+              "Title": row['title'],
+              "isMultiLine": True,
+              "lines": lines
+            }
+          else:
+            entry = {
+              "Quote": row['quote'],
+              "Author": row['author'],
+              "Title": row['title'],
+              "isMultiLine": False
+            }
+
           if keyword in abbreviations_to_real:
             keyword = abbreviations_to_real[keyword]
           if keyword in quotes_by_category:

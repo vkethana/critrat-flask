@@ -4,10 +4,24 @@
   <h1>{{ category }}</h1>
     {% for quote in quotes %}
       <div class="quote">
-        {% if "https" in quote.Title %}
-        <p>{{ quote.Quote | replace("\n", "<br>") | safe }} — {{quote.Author}} (<a href="{{ quote.Title }}" target="_blank">source</a>)</p>
+        {% if quote.isMultiLine %}
+          <div class="tooltip" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">
+          <span class="tooltiptext">Show Context<span class="tooltip-arrow"></span></span>
+          {% for item in quote.lines %}
+            {% if loop.last %}
+              <div class="last" onclick="toggleLines(this)">{{item}}</div>
+            {% else %}
+              <div class="hiddenSubQuote gray extra-bottom-margin" style="display: none;">{{item}}</div>
+            {% endif %}
+          {% endfor %}
+          </div>
         {% else %}
-          <p>{{ quote.Quote | replace("\n", "<br>") | safe }} —{{ quote.Author }}, {{ quote.Title }}</p>
+          {{ quote.Quote | replace("\n", "<br>") | safe }} —
+          {% if "https" in quote.Title %}
+            {{quote.Author}} (<a href="{{ quote.Title }}" target="_blank">source</a>)
+          {% else %}
+            {{ quote.Author }}, {{ quote.Title }}
+          {% endif %}
         {% endif %}
       </div>
 
@@ -17,4 +31,31 @@
         </div>
       {% endif %}
     {% endfor %}
+    <script>
+      function toggleLines(element) {
+        var siblings = element.previousElementSibling;
+        while (siblings) {
+          if (siblings.classList.contains('hiddenSubQuote')) {
+            siblings.style.display = 'block';
+            siblings.classList.remove('hiddenSubQuote');
+          } else {
+            siblings.style.display = 'none';
+            siblings.classList.add('hiddenSubQuote');
+          }
+          siblings = siblings.previousElementSibling;
+        }
+      }
+      
+      function showTooltip(element) {
+        var tooltip = element.getElementsByClassName("tooltiptext")[0];
+        tooltip.style.visibility = "visible";
+        tooltip.style.opacity = 1;
+      }
+
+      function hideTooltip(element) {
+        var tooltip = element.getElementsByClassName("tooltiptext")[0];
+        tooltip.style.visibility = "hidden";
+        tooltip.style.opacity = 0;
+      }
+    </script>
 {% endblock %}

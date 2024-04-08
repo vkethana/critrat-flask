@@ -72,3 +72,49 @@ li a {
     justify-content: center;
     align-items: center;
 }
+
+.gray {
+    color: gray;
+}
+
+.extra-bottom-margin {
+  margin-bottom: 10px;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: calc(100% + 10px); /* Position the tooltip to the right of the paragraph */
+  transform: translateY(-50%); /* Center the tooltip vertically */
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent transparent #f9f9f9;
+}
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+

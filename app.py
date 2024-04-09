@@ -10,10 +10,15 @@ import time
 
 encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
 credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
-selected_database = "DD"
+
+database_list = ["primary",  "david", "misc1", "misc2"]
+default_database = database_list[0]
+assert (database_list[0] == "primary"), "The first database should be the primary database"
+selected_database = default_database
+
 database_dict = {}
 max_character_count = 500
-amount_per_category = 3
+amount_per_category = 2
 user_request_times = {}
 
 with open('data/abbreviation_list.json', 'r') as file:
@@ -22,7 +27,6 @@ with open('data/abbreviation_list.json', 'r') as file:
 def get_data(worksheet_name):
   gc = gspread.service_account_from_dict(credentials)
   wks = gc.open("CritRat Quote Database")
-  #print("List of all available worksheets: ", wks.worksheets())
   print("Loading the database: ", worksheet_name)
   wks = wks.worksheet(worksheet_name)
   df = pd.DataFrame(wks.get_all_records())
@@ -43,10 +47,8 @@ def get_data(worksheet_name):
         for keyword in found_keywords:
           # check if the quote has a line break and if so print it out
           if "\n" in row['quote']:
-            print("Line break found in quote: ", row['quote'])
             # split the quote into a list of lines
             lines = [i for i in row['quote'].split("\n") if i != '']
-            #print("Lines: ", lines)
             entry = {
               "Quote": row['quote'],
               "Author": row['author'],
@@ -74,9 +76,6 @@ def get_data(worksheet_name):
 
   quote_counter = {}
   for i in quotes_by_category.keys():
-    #print("KEY: ", i)
-    #print("ITEM: ", quotes_by_category[i])
-
     quote_counter[i] = len(quotes_by_category[i])
 
   sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
@@ -94,8 +93,8 @@ def get_data(worksheet_name):
   return retval
 
 # TODO add a way to iterate through all the databases without manual entry
-for selected_database in ["DD",  "David", "Vijay", "Other"]:
-  database_dict[selected_database] = get_data(selected_database)
+for s in database_list:
+  database_dict[s] = get_data(s)
 
 app = Flask(__name__)
 
@@ -112,31 +111,37 @@ def categorize_words(words):
 
     return categorized_words
 
-def get_appropriate_database():
+def get_appropriate_database(category=None):
   try:
-    selected_option = request.cookies.get('selected_option')
-    return database_dict[selected_option]
+    if (category != None):
+      return database_dict[category]
+    else:
+      return database_dict[request.cookies.get('selected_option')]
   except:
     print("Could not get the selected option from the cookie")
     selected_option = None
-    print("Loading database for DD")
-    return database_dict['DD']
+    print("Defaulting to the primary database.")
+    return database_dict[default_database]
 
 @app.route('/')
 def index():
     stuff = get_appropriate_database()
     sorted_categories = stuff['sorted_categories']
-    #print("sorted_categories: ", sorted_categories)
     quote_counter = stuff['quote_counter']
     # Pass the data to the template
-    return render_template('index.html', categorized_words=categorize_words(sorted_categories), quote_counter=quote_counter)
+    try:
+      selected_database = request.cookies.get('selected_option')
+    except:
+      selected_database = default_database
 
-@app.route('/keyword/<keyword>')
-def word_page(keyword):
+    return render_template('index.html', categorized_words=categorize_words(sorted_categories), quote_counter=quote_counter, selected_database=selected_database)
+
+@app.route('/<category>/<keyword>')
+def word_page(category, keyword):
     if (keyword == 'inf'):
       keyword = 'infinity'
 
-    stuff = get_appropriate_database()
+    stuff = get_appropriate_database(category)
     try:
       quotes_by_category = stuff['quotes_by_category']
       quotes = quotes_by_category[keyword.replace("_", " ")]
@@ -153,7 +158,6 @@ def random_item():
     # Randomly select an item from the JSON data
     random_items = quotes_by_category[random.choice(list(quotes_by_category.keys()))]
     random_quote = random.choice(random_items)
-    #print(random_quote)
     return render_template('random.html', quote=random_quote)
 
 @app.route('/about')
@@ -171,10 +175,8 @@ def suggest():
         # Get the form data from the request
         form_data = request.form
         captcha_response = request.form['g-recaptcha-response']
-        #print(form_data)
         form_data = dict(form_data)
         form_data['gCaptchaResponse'] = captcha_response
-        #print(form_data)
 
         url = 'https://script.google.com/macros/s/AKfycbzat_gUO8Vw1jvfgHFsAh_GNVYi4AzDH3061DnsRa68jLqpX20-uVxJOBL16AG0bPw/exec'
         headers = {'Content-Type': 'text/plain;charset=utf-8'}
@@ -183,16 +185,11 @@ def suggest():
 
         if response.status_code == 200:
             response_data = response.json()
-            #print('data', response_data)
-        else:
-            #print('err', response.text)
-            pass
 
     return render_template('suggest.html')
 
 def refreshDatabase(targeted_refresh=None):
   if targeted_refresh != None:
-    #print("Only refreshing the targeted database: ", targeted_refresh)
     database_dict[targeted_refresh] = get_data(targeted_refresh)
   else:
     for db in ["DD", "David", "Vijay", "Other"]:
@@ -222,7 +219,7 @@ def limit_refresh_rate():
             request_times = [t for t in request_times if current_time - t <= 60]
             if len(request_times) >= 10:
                 msg = "ERROR: You have made too many refresh requests. Please wait a bit and try again."
-                response = make_response(render_template('refresh.html', selected_option='DD', message=msg))
+                response = make_response(render_template('refresh.html', selected_option=str(default_database), message=msg))
                 return response
 
         # Update the request times for the user
@@ -233,7 +230,6 @@ def limit_refresh_rate():
 @app.route('/refresh', methods=['GET', 'POST'])
 def refresh():
   if request.method == 'POST':
-      #print("POST request received: ", request)
       option = request.form.get('option')  # Use request.form.get to handle missing keys
 
       if option == None:
@@ -245,9 +241,7 @@ def refresh():
       return response
   else:
       selected_option = request.cookies.get('selected_option')
-      #print("selected option is ", selected_option)
       return render_template('refresh.html', selected_option=selected_option)
 
 if __name__ == '__main__':
     app.run(debug=True)
-    #pass

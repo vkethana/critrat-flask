@@ -1,52 +1,87 @@
+import gspread
 import json
+import pandas as pd
+import base64
+import os
 
-# Read JSON file
-with open('abbreviation_list.json', 'r') as file:
-    abbrevations_to_real = json.load(file)
+encoded_key = os.getenv("SERVICE_ACCOUNT_KEY")
+credentials = json.loads(base64.b64decode(encoded_key).decode('utf-8'))
 
-def open_data(file_paths):
-  # Read JSON file
-  data = {}
-  for file_path in file_paths:
-    print("Reading file path", file_path)
-    with open(file_path, 'r') as file:
-        data = data | json.load(file)
-  print("File read successfully.")
-  return data
+database_list = ["primary",  "david", "misc1", "misc2"]
+default_database = database_list[0]
+assert (database_list[0] == "primary"), "The first database should be the primary database"
+selected_database = default_database
+max_character_count = 500
+amount_per_category = 2
 
-def get_data(data):
+with open('data/abbreviation_list.json', 'r') as file:
+    abbreviations_to_real = json.load(file)
 
-  categories = {}
-  for i in data.keys():
-      quote = data[i]
-      quote_category_list = quote['keywords']
+def get_data(worksheet_name):
+  gc = gspread.service_account_from_dict(credentials)
+  wks = gc.open("CritRat Quote Database")
+  print("Loading the database: ", worksheet_name)
+  wks = wks.worksheet(worksheet_name)
+  df = pd.DataFrame(wks.get_all_records())
+  df['keywords'] = ''
 
-      ***REMOVED***
-      text_to_check = quote['quote'].lower()
-      is_controversial = any(elem in text_to_check for elem in hidden_keywords) or any(elem in text_to_check.split() for elem in hidden_keywords)
+  rows_to_check = ["KEYWORD_" + str(i) for i in range(1,13)]
+  all_keywords = set()
+  quotes_by_category = {}
 
-      good_length = len(quote['quote']) < 900
+  for index, row in df.iterrows():
+      found_keywords = set()
+      for r in rows_to_check:
+          if (row[r] != ''):
+              found_keywords.add(row[r])
+              all_keywords.add(row[r])
+      df.at[index, 'keywords'] = found_keywords
+      if found_keywords:
+        for keyword in found_keywords:
+          # check if the quote has a line break and if so print it out
+          if "\n" in row['quote']:
+            # split the quote into a list of lines
+            lines = [i for i in row['quote'].split("\n") if i != '']
+            entry = {
+              "Quote": row['quote'],
+              "Author": row['author'],
+              "Title": row['title'],
+              "isMultiLine": True,
+              "lines": lines
+            }
+          else:
+            entry = {
+              "Quote": row['quote'],
+              "Author": row['author'],
+              "Title": row['title'],
+              "isMultiLine": False
+            }
 
-      if ((quote_category_list != []) and (is_controversial == False) and good_length):
-        c = quote_category_list[0]
-        if (c != 'pattern') and (c != 'the pattern'):
-          if c not in categories:
-              categories[c] = []
-          categories[c].append({'Quote': quote['quote'], 'Source': quote['author']+ ", " + quote['title']})
+          if keyword in abbreviations_to_real:
+            keyword = abbreviations_to_real[keyword]
+          if keyword in quotes_by_category:
+              if len(row['quote']) < max_character_count:
+                quotes_by_category[keyword].append(entry)
+          else:
+            quotes_by_category[keyword] = [entry]
 
-      else:
-        #print("Will NOT show this quote in the site: ", quote['text'], "because it has no keywords / contains controversial material.")
-        pass
+  df.drop(columns=["KEYWORD_" + str(i) for i in range(1, 13)], inplace=True)
 
-  new_dict = {}
-  for c in categories:
-      if c in abbrevations_to_real:
-          new_dict[abbrevations_to_real[c]] = categories[c]
-      else:
-          new_dict[c] = categories[c]
-  return new_dict
+  quote_counter = {}
+  for i in quotes_by_category.keys():
+    quote_counter[i] = len(quotes_by_category[i])
 
-data = open_data(['naval_brett.json', 'dd.json'])
-quotes_by_category = get_data(data)
-print("QUOTES BY CATEGORY")
-print(quotes_by_category)
+  sorted_categories = sorted(quotes_by_category.keys(), key = lambda x: len(quotes_by_category[x]), reverse=True)
+
+  # remove the categories that don't have at least "N" quotes for arbitrary n
+  sorted_categories = [i for i in sorted_categories if (quote_counter[i] >= amount_per_category) and (i != '') and (i != float('inf'))]
+
+  retval = {
+    "quotes_by_category": quotes_by_category,
+    "quote_counter": quote_counter,
+    "sorted_categories": sorted_categories,
+    "df": df,
+    "data": df[['quote', 'keywords', 'author', 'title']].to_dict(orient='index')
+  }
+  return retval
+

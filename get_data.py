@@ -11,7 +11,7 @@ database_list = ["primary",  "david", "misc1", "misc2"]
 default_database = database_list[0]
 assert (database_list[0] == "primary"), "The first database should be the primary database"
 selected_database = default_database
-max_character_count = 500
+max_character_count = 650
 amount_per_category = 2
 
 with open('data/abbreviation_list.json', 'r') as file:
@@ -45,7 +45,7 @@ def get_data(worksheet_name):
             entry = {
               "Quote": row['quote'],
               "Author": row['author'],
-              "Title": row['title'],
+              "Title": str(row['title']),
               "isMultiLine": True,
               "lines": lines
             }
@@ -53,17 +53,19 @@ def get_data(worksheet_name):
             entry = {
               "Quote": row['quote'],
               "Author": row['author'],
-              "Title": row['title'],
+              "Title": str(row['title']),
               "isMultiLine": False
             }
 
-          if keyword in abbreviations_to_real:
-            keyword = abbreviations_to_real[keyword]
-          if keyword in quotes_by_category:
-              if len(row['quote']) < max_character_count:
-                quotes_by_category[keyword].append(entry)
-          else:
-            quotes_by_category[keyword] = [entry]
+          if len(row['quote']) < max_character_count:
+
+            if keyword in abbreviations_to_real:
+              keyword = abbreviations_to_real[keyword]
+
+            if keyword in quotes_by_category:
+              quotes_by_category[keyword].append(entry)
+            else:
+              quotes_by_category[keyword] = [entry]
 
   df.drop(columns=["KEYWORD_" + str(i) for i in range(1, 13)], inplace=True)
 
